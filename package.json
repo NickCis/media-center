@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "deploy": "vercel --prod",
     "dev": "next dev",
     "format": "prettier --write '{app,components,data,interfaces,lib}/**/*.{js,ts,tsx}' components.json next.config.js next-env.d.ts postcss.config.js prettier.config.js tailwind.config.ts tsconfig.json",
     "lint": "next lint",
@@ -47,6 +48,7 @@
     "postcss": "^8",
     "prettier": "^3.1.1",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vercel": "^33.1.0"
   }
 }

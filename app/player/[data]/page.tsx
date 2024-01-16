@@ -48,9 +48,15 @@ export default function Player({ params }: PlayerProps) {
         </div>
         <Separator className="my-4" />
       </div>
-      {video?.src ? (
-        <VideoPlayer className="flex-1" src={video.src} controls />
-      ) : null}
+      <div className="flex-1">
+        {video?.src ? (
+          <VideoPlayer
+            src={video.src}
+            className="max-h-full min-w-full object-cover"
+            controls
+          />
+        ) : null}
+      </div>
     </Frame>
   );
 }
