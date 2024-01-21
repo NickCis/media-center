@@ -21,6 +21,10 @@ export function VideoPlayer({ src, ...props }: VideoPlayerProps) {
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play();
       });
+
+      return () => {
+        hls.destroy();
+      };
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
       video.addEventListener('loadedmetadata', () => {
