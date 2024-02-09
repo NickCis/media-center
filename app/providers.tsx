@@ -6,9 +6,13 @@ import { useState, type PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+import {
+  PersistentStorage,
+  PersistentStorageProvider,
+} from '@/lib/persistent-storage';
 
 export function Providers({ children }: PropsWithChildren<{}>) {
-  const [{ queryClient, persistOptions }] = useState(() => ({
+  const [{ queryClient, persistOptions, persistentStorage }] = useState(() => ({
     queryClient: new QueryClient({
       defaultOptions: {
         queries: {
@@ -27,9 +31,19 @@ export function Providers({ children }: PropsWithChildren<{}>) {
             }),
           }
         : undefined,
+    persistentStorage:
+      typeof window !== 'undefined' && 'indexedDB' in window
+        ? new PersistentStorage()
+        : undefined,
   }));
 
-  if (persistOptions)
+  if (persistentStorage)
+    children = (
+      <PersistentStorageProvider persistentStorage={persistentStorage}>
+        {children}
+      </PersistentStorageProvider>
+    );
+  if (queryClient && persistOptions)
     return (
       <PersistQueryClientProvider
         client={queryClient}

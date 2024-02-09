@@ -4,6 +4,7 @@ import { usePlaylists } from '@/data/playlists';
 import { Frame } from '@/components/frame';
 import { VideoSection } from '@/components/video-section';
 import { PodcastEmptyPlaceholder } from '@/components/playlist-empty-placeholder';
+import { PersistentStorage } from '@/lib/persistent-storage';
 
 // https://ui.shadcn.com/examples/music
 // https://github.com/shadcn-ui/ui/blob/main/apps/www/app/examples/music/
