@@ -2,16 +2,16 @@
 
 import {
   useQuery,
-  useQueries,
   useQueryClient,
   useMutation,
   type UseQueryResult,
 } from '@tanstack/react-query';
 import type { PlaylistEntry, Source } from '@/interfaces/playlist';
+import { usePersistedQueries } from '@/lib/query-persister';
 
 // https://jsonbin.io/
 
-const PlaylistSourcesKey = '__media-center__playist-sources__';
+const PlaylistSourcesKey = '__media-center__playlist-sources__';
 
 export async function getPlaylistSources(): Promise<Source[]> {
   try {
@@ -24,6 +24,7 @@ export function usePlaylistSources() {
   return useQuery({
     queryKey: ['playlist-sources'],
     queryFn: getPlaylistSources,
+    networkMode: 'always',
   });
 }
 
@@ -119,10 +120,10 @@ export async function getPlaylist(src: Source): Promise<PlaylistEntry> {
 export function usePlaylists(): UseQueryResult<PlaylistEntry>[] {
   const { data: playlistsSrc } = usePlaylistSources();
 
-  return useQueries({
+  return usePersistedQueries({
     queries: playlistsSrc
       ? playlistsSrc.map((src) => ({
-          queryKey: ['playlists', src.src],
+          queryKey: ['playlists', src.type || 'jsonbin', src.src],
           queryFn: async () => {
             return await getPlaylist(src);
           },
