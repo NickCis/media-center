@@ -117,6 +117,7 @@ export function VideoPlayer({ src, ...props }: VideoPlayerProps) {
 
       return () => {
         cancel = true;
+        video.pause();
         if (cleanup) cleanup();
       };
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {

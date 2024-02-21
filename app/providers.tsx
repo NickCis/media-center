@@ -13,10 +13,11 @@ import {
   PersisterClient,
   PersisterClientProvider,
 } from '@/lib/query-persister';
+import { CastManager, CastManagerProvider } from '@/lib/cast';
 
 export function Providers({ children }: PropsWithChildren<{}>) {
-  const [{ queryClient, persistentStorage, persisterClient }] = useState(
-    () => ({
+  const [{ queryClient, persistentStorage, persisterClient, castManager }] =
+    useState(() => ({
       queryClient: new QueryClient({
         defaultOptions: {
           queries: {
@@ -37,8 +38,16 @@ export function Providers({ children }: PropsWithChildren<{}>) {
               key: '__media_center__persister__',
             })
           : undefined,
-    }),
-  );
+      castManager:
+        typeof window !== 'undefined' ? new CastManager() : undefined,
+    }));
+
+  if (castManager)
+    children = (
+      <CastManagerProvider manager={castManager}>
+        {children}
+      </CastManagerProvider>
+    );
 
   if (persistentStorage)
     children = (
