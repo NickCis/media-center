@@ -45,8 +45,8 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/chromecast-caf-sender": "^1.0.8",
     "@tanstack/react-query-devtools": "^5.20.5",
+    "@types/chromecast-caf-sender": "^1.0.9",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

@@ -43,7 +43,7 @@ export class CastManager extends EventTarget {
     script.src =
       'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
 
-    (window as any)['__onGCastApiAvailable'] = (isAvailable: boolean) => {
+    window['__onGCastApiAvailable'] = (isAvailable: boolean) => {
       if (!isAvailable) {
         this.setState('unavailable');
         return;
@@ -56,7 +56,7 @@ export class CastManager extends EventTarget {
         autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
         // androidReceiverCompatible: false,
         androidReceiverCompatible: true,
-      } as any);
+      });
 
       // https://developers.google.com/cast/docs/reference/web_sender/cast.framework#.CastContextEventType
       this.setStateFromCastState(context.getCastState());
