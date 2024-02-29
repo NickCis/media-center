@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "types": ["@serwist/next/typings"],
+    "types": ["@serwist/next/typings", "chromecast-caf-sender"],
     "lib": ["dom", "dom.iterable", "esnext", "webworker"],
     "allowJs": true,
     "skipLibCheck": true,

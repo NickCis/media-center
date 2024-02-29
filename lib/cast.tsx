@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useRef,
   type PropsWithChildren,
 } from 'react';
 
@@ -28,7 +29,7 @@ export class CastManager extends EventTarget {
   remotePlayer: any = null;
   remotePlayerController: any = null;
   media?: Media;
-  mediaInfo?: any;
+  mediaInfo?: chrome.cast.media.MediaInfo;
   activeTrackIds?: number[];
   currentTime?: number;
   isPaused?: boolean;
@@ -42,13 +43,11 @@ export class CastManager extends EventTarget {
     script.src =
       'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
 
-    window['__onGCastApiAvailable'] = (isAvailable) => {
+    (window as any)['__onGCastApiAvailable'] = (isAvailable: boolean) => {
       if (!isAvailable) {
         this.setState('unavailable');
         return;
       }
-
-      this.setState('available');
 
       const context = cast.framework.CastContext.getInstance();
 
@@ -57,7 +56,7 @@ export class CastManager extends EventTarget {
         autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
         // androidReceiverCompatible: false,
         androidReceiverCompatible: true,
-      });
+      } as any);
 
       // https://developers.google.com/cast/docs/reference/web_sender/cast.framework#.CastContextEventType
       this.setStateFromCastState(context.getCastState());
@@ -97,35 +96,35 @@ export class CastManager extends EventTarget {
               const request = new chrome.cast.media.LoadRequest(mediaInfo);
               cast.framework.CastContext.getInstance()
                 .getCurrentSession()
-                .loadMedia(request);
+                ?.loadMedia(request);
             }
 
             this.friendlyName = cast.framework.CastContext.getInstance()
               .getCurrentSession()
-              .getCastDevice().friendlyName;
+              ?.getCastDevice().friendlyName;
 
             this.remotePlayerController.addEventListener(
               cast.framework.RemotePlayerEventType.MEDIA_INFO_CHANGED,
-              (ev) => {
+              (ev: { value: chrome.cast.media.MediaInfo }) => {
                 this.setMediaInfo(
                   ev.value,
                   cast.framework.CastContext.getInstance()
                     .getCurrentSession()
-                    .getMediaSession()?.activeTrackIds,
+                    ?.getMediaSession()?.activeTrackIds,
                 );
               },
             );
 
             this.remotePlayerController.addEventListener(
               cast.framework.RemotePlayerEventType.CURRENT_TIME_CHANGED,
-              (ev) => {
+              (ev: { value: number }) => {
                 this.setCurrentTime(ev.value);
               },
             );
 
             this.remotePlayerController.addEventListener(
               cast.framework.RemotePlayerEventType.IS_PAUSED_CHANGED,
-              (ev) => {
+              (ev: { value: boolean }) => {
                 this.isPaused = ev.value;
                 this.dispatchEvent(new Event('is-paused-changed'));
               },
@@ -173,7 +172,10 @@ export class CastManager extends EventTarget {
     this.dispatchEvent(new Event('state-changed'));
   }
 
-  setMediaInfo(mediaInfo, activeTrackIds) {
+  setMediaInfo(
+    mediaInfo: chrome.cast.media.MediaInfo,
+    activeTrackIds?: number[],
+  ) {
     this.mediaInfo = mediaInfo;
     if (activeTrackIds) this.activeTrackIds = activeTrackIds;
     this.dispatchEvent(new Event('media-info-changed'));
@@ -198,18 +200,23 @@ export class CastManager extends EventTarget {
     this.remotePlayerController.stop();
   }
 
-  setSubtitle(trackId: number) {
+  async setSubtitle(trackId: number): Promise<void> {
     const media = cast.framework.CastContext.getInstance()
       .getCurrentSession()
-      .getMediaSession();
+      ?.getMediaSession();
+    if (!media) return;
     const activeTrackIds = media.activeTrackIds.filter(
       (id) =>
         !media.media.tracks.find((t) => t.type === 'TEXT' && t.trackId == id),
     );
     if (trackId !== -1) activeTrackIds.push(trackId);
 
-    media.editTracksInfo(
-      new chrome.cast.media.EditTracksInfoRequest(activeTrackIds),
+    return await new Promise((rs, rj) =>
+      media.editTracksInfo(
+        new chrome.cast.media.EditTracksInfoRequest(activeTrackIds),
+        rs,
+        rj,
+      ),
     );
   }
 }
@@ -232,18 +239,20 @@ export function CastManagerProvider({
 }
 
 interface CastManagerState {
+  state: CastState;
   isLoading: boolean;
   isAvailable: boolean;
   isConnecting: boolean;
   isConnected: boolean;
   isDisconnected: boolean;
   requestSession: (media: Media) => void;
-  endCurrentSession: (stopCasting?: boolean) => {};
+  endCurrentSession: (stopCasting?: boolean) => void;
 }
 
 function getState(manager: CastManager | null): CastManagerState {
   if (!manager)
     return {
+      state: 'unknown',
       isLoading: false,
       isAvailable: false,
       isConnecting: false,
@@ -291,42 +300,57 @@ export function useCast(): CastManagerState {
   return state;
 }
 
-export function useMedia() {
+interface CastMediaState {
+  mediaInfo?: chrome.cast.media.MediaInfo;
+  activeTrackIds: number[];
+  currentTime: number;
+  seek: (currentTime: number) => void;
+  playOrPause: () => void;
+  isPaused: boolean;
+  stop: () => void;
+  setSubtitle: (trackId: number) => void;
+  friendlyName: string;
+}
+
+export function useMedia(): CastMediaState {
   const manager = useCastManager();
+  const managerRef = useRef(manager);
+  managerRef.current = manager;
   const [state, setState] = useState(() => ({
-    mediaInfo: manager.mediaInfo,
-    activeTrackIds: manager.activeTrackIds,
-    currentTime: manager.currentTime,
+    mediaInfo: manager?.mediaInfo,
+    activeTrackIds: manager?.activeTrackIds || [],
+    currentTime: manager?.currentTime || 0,
     seek: (currentTime: number) => {
-      manager.seek(currentTime);
+      managerRef.current?.seek(currentTime);
     },
     playOrPause: () => {
-      manager.playOrPause();
+      managerRef.current?.playOrPause();
     },
-    isPaused: manager.isPaused,
-    stop: () => manager.stop(),
-    setSubtitle: (trackId: number) => manager.setSubtitle(trackId),
-    friendlyName: manager.friendlyName,
+    isPaused: manager?.isPaused || true,
+    stop: () => managerRef.current?.stop(),
+    setSubtitle: (trackId: number) => managerRef.current?.setSubtitle(trackId),
+    friendlyName: manager?.friendlyName || '',
   }));
+
   useEffect(() => {
     if (!manager) return;
     const handleMediaInfoChanged = () => {
       setState((s) => ({
         ...s,
         mediaInfo: manager.mediaInfo,
-        activeTrackIds: manager.activeTrackIds,
+        activeTrackIds: manager.activeTrackIds || [],
       }));
     };
     const handleCurrentTimeChanged = () => {
       setState((s) => ({
         ...s,
-        currentTime: manager.currentTime,
+        currentTime: manager.currentTime || 0,
       }));
     };
     const handleIsPausedChanged = () => {
       setState((s) => ({
         ...s,
-        isPaused: manager.isPaused,
+        isPaused: manager.isPaused || true,
       }));
     };
 

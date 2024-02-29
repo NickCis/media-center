@@ -70,7 +70,7 @@ interface VideoData {
 }
 
 function getMediaTimeString(timestamp?: number | null): string {
-  if (timestamp == undefined || timestamp == null) return null;
+  if (timestamp == undefined || timestamp == null) return '';
 
   let isNegative = false;
   if (timestamp < 0) {
@@ -78,15 +78,14 @@ function getMediaTimeString(timestamp?: number | null): string {
     timestamp *= -1;
   }
 
-  let hours = Math.floor(timestamp / 3600);
-  let minutes = Math.floor((timestamp - hours * 3600) / 60);
-  let seconds = Math.floor(timestamp - hours * 3600 - minutes * 60);
+  const hours = Math.floor(timestamp / 3600);
+  const minutes = Math.floor((timestamp - hours * 3600) / 60);
+  const seconds = Math.floor(timestamp - hours * 3600 - minutes * 60);
 
-  if (hours < 10) hours = '0' + hours;
-  if (minutes < 10) minutes = '0' + minutes;
-  if (seconds < 10) seconds = '0' + seconds;
-
-  return (isNegative ? '-' : '') + hours + ':' + minutes + ':' + seconds;
+  return (
+    (isNegative ? '-' : '') +
+    [hours, minutes, seconds].map((n) => `${n}`.padStart(2, '0')).join(':')
+  );
 }
 
 function usePlayerProps(data: string): VideoData | undefined {
@@ -202,7 +201,7 @@ function CastController() {
   } = useMedia();
   const [slider, setSlider] = useState<number | undefined>();
   const subtitleTracks = (mediaInfo?.tracks || []).filter(
-    (t) => t.type === 'TEXT',
+    (t: { type: string }) => t.type === 'TEXT',
   );
 
   return (
@@ -252,11 +251,12 @@ function CastController() {
                 const value = parseInt(ev, 10);
                 setSubtitle(value);
               }}
-              value={
+              value={`${
                 subtitleTracks.find(
-                  ({ trackId }) => activeTrackIds?.includes(trackId),
+                  ({ trackId }: { trackId: number }) =>
+                    activeTrackIds?.includes(trackId),
                 )?.trackId ?? -1
-              }
+              }`}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Subtitle" />
@@ -264,12 +264,14 @@ function CastController() {
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Subtitle</SelectLabel>
-                  <SelectItem value={-1}>No Subtitle</SelectItem>
-                  {subtitleTracks.map((s) => (
-                    <SelectItem key={s.trackId} value={s.trackId}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="-1">No Subtitle</SelectItem>
+                  {subtitleTracks.map(
+                    (s: { name: string; trackId: number }) => (
+                      <SelectItem key={`${s.trackId}`} value={`${s.trackId}`}>
+                        {s.name}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -311,7 +313,7 @@ export default function Player({ params }: PlayerProps) {
               onClick={() => {
                 if (video && castState.isDisconnected) {
                   castState.requestSession({
-                    src: video?.src,
+                    src: video.src,
                     title: video.title,
                   });
                   return;
