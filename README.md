@@ -32,8 +32,8 @@ Features:
 
 TODO:
 
- - [ ] Use [megajs](https://www.npmjs.com/package/megajs) to allow downloading files from meganz without using a proxy
- - [ ] Web install
+ - [x] Use [megajs](https://www.npmjs.com/package/megajs) to allow downloading files from meganz without using a proxy -> Very bad perfomance vs online meganz proxy :/
+ - [ ] [Web install](https://web.dev/learn/pwa/installation)
  - [ ] Implement `cast:` property in schema in order to allow `mega://...` protocol.
  - [ ] Validate playlist schema
  - [ ] Implement `raw` schema (no jsonio structure) for playlists

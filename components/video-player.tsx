@@ -11,6 +11,9 @@ import {
   PersistentStorage,
   usePersistentStorage,
 } from '@/lib/persistent-storage';
+import { MegaDownloader, withMegaDownloader, UseMegaJs } from '@/lib/mega';
+
+// type = - just to fix highlight in vim
 
 export type VideoPlayerProps = VideoHTMLAttributes<HTMLVideoElement>;
 
@@ -45,18 +48,20 @@ function withStorage(
 
       if (file) {
         switch (responseType) {
-          case 'text':
+          case 'text': {
+            const text = await file.blob.text();
             callbacks.onSuccess(
               {
                 code: 200,
                 url,
-                data: await file.blob.text(),
+                data: text,
               },
               this.stats,
               context,
-              {},
+              { responseText: text },
             );
             break;
+          }
 
           case 'arraybuffer':
             callbacks.onSuccess(
@@ -100,10 +105,11 @@ export function VideoPlayer({ src, ...props }: VideoPlayerProps) {
       let cleanup: () => void;
 
       (async () => {
-        let loader: typeof Hls.DefaultConfig.loader | undefined = undefined;
-        if (storageRef.current) {
-          loader = withStorage(storageRef.current);
-        }
+        let loader: typeof Hls.DefaultConfig.loader = UseMegaJs
+          ? withMegaDownloader(new MegaDownloader())
+          : Hls.DefaultConfig.loader;
+        if (storageRef.current)
+          loader = withStorage(storageRef.current, loader);
         const hls = new Hls(loader ? { loader } : {});
         cleanup = () => {
           hls.destroy();

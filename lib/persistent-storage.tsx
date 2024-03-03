@@ -10,6 +10,14 @@ import {
 } from 'react';
 import { openDB, deleteDB, type DBSchema, type IDBPDatabase } from 'idb';
 import Hls from 'hls.js';
+import {
+  MegaDownloader,
+  isMegaLink,
+  UseMegaJs,
+  withMegaDownloader,
+} from '@/lib/mega';
+
+// type = - just to fix highlight in vim
 
 interface MediaFileGeneric {
   type: 'playlist' | 'video' | 'vtt';
@@ -58,20 +66,57 @@ function newPromise(): { resolve: () => void; promise: Promise<void> } {
   };
 }
 
+class Downloader {
+  megaDownloader?: MegaDownloader;
+
+  getMegaDownloader(): MegaDownloader {
+    if (!this.megaDownloader) this.megaDownloader = new MegaDownloader();
+    return this.megaDownloader;
+  }
+
+  async fetch(
+    src: string,
+  ): Promise<{ ok: boolean; blob: () => Promise<Blob> }> {
+    if (UseMegaJs && isMegaLink(src)) {
+      try {
+        const arr = await this.getMegaDownloader().fetch(src);
+        return {
+          ok: true,
+          blob: async () => new Blob([arr]),
+        };
+      } catch (e) {
+        console.error(e);
+        return {
+          ok: false,
+          blob: async () => new Blob([(e as Error).toString()]),
+        };
+      }
+    }
+
+    return await fetch(src);
+  }
+}
+
 class HLSDownloader extends EventTarget {
   persistentStorage: PersistentStorage;
   total = 0;
   current = 0;
   runners = 5;
   pending: (Omit<MediaFileGeneric, 'blob'> & { start: number })[] = [];
+  downloader: Downloader;
 
   constructor(persistentStorage: PersistentStorage) {
     super();
     this.persistentStorage = persistentStorage;
+    this.downloader = new Downloader();
   }
 
   download(href: string) {
-    const hls = new Hls();
+    const hls = new Hls(
+      UseMegaJs
+        ? { loader: withMegaDownloader(this.downloader.getMegaDownloader()) }
+        : {},
+    );
     let i = 0;
     const levelPromise = newPromise();
     const subtitlePromise = newPromise();
@@ -201,17 +246,24 @@ class HLSDownloader extends EventTarget {
   ): Promise<void> {
     const exists = !!(await this.persistentStorage.getFile(media.href));
     if (!exists) {
-      const res = await fetch(media.href);
-      if (res.ok) {
-        await this.persistentStorage.storeFile({
-          ...media,
-          blob: await res.blob(),
-        });
-      } else if (retry > 0) {
-        return await this.downloadFile(media, retry - 1);
-      } else {
+      try {
+        const res = await this.downloader.fetch(media.href);
+        if (res.ok) {
+          await this.persistentStorage.storeFile({
+            ...media,
+            blob: await res.blob(),
+          });
+        } else if (retry > 0) {
+          return await this.downloadFile(media, retry - 1);
+        } else {
+          // TODO: add data
+          this.dispatchEvent(new Event('error'));
+        }
+      } catch (e) {
+        console.error(e);
+        if (retry > 0) return await this.downloadFile(media, retry - 1);
         // TODO: add data
-        this.dispatchEvent(new Event('error'));
+        else this.dispatchEvent(new Event('error'));
       }
     }
 

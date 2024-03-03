@@ -1,6 +1,6 @@
-import { defaultCache } from "@serwist/next/browser";
-import type { PrecacheEntry } from "@serwist/precaching";
-import { installSerwist } from "@serwist/sw";
+import { defaultCache } from '@serwist/next/browser';
+import type { PrecacheEntry } from '@serwist/precaching';
+import { installSerwist } from '@serwist/sw';
 
 declare const self: ServiceWorkerGlobalScope & {
   // Change this attribute's name to your `injectionPoint`.

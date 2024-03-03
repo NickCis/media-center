@@ -1,11 +1,10 @@
-
 // https://serwist.pages.dev/docs/next/configuring
-const withSerwist = require("@serwist/next").default({
+const withSerwist = require('@serwist/next').default({
   // Note: This is only an example. If you use Pages Router,
   // use something else that works, such as "service-worker/index.ts".
-  swSrc: "app/sw.ts",
-  swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development", // to disable pwa in development
+  swSrc: 'app/sw.ts',
+  swDest: 'public/sw.js',
+  disable: process.env.NODE_ENV === 'development', // to disable pwa in development
   cacheOnFrontEndNav: true,
 });
 

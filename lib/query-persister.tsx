@@ -253,6 +253,8 @@ export function usePersistedQueries<
   const persisterClient = usePersisterClient();
   return useQueries({
     ...options,
-    queries: (queries as any).map((q: any) => enhaceQuery(queryClient, persisterClient, q)),
+    queries: (queries as any).map((q: any) =>
+      enhaceQuery(queryClient, persisterClient, q),
+    ),
   });
 }
