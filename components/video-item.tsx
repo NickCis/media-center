@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import Image from 'next/image';
+// import Image from 'next/image';
 import { PlusCircledIcon } from '@radix-ui/react-icons';
 import Link from 'next/link';
 import { btoa } from '@/lib/base64';
@@ -53,7 +53,7 @@ export function VideoItem({
         <ContextMenuTrigger>
           <div className="overflow-hidden rounded-md">
             <Link href={href}>
-              <Image
+              <img
                 src={video.cover}
                 alt={video.title}
                 width={width}
